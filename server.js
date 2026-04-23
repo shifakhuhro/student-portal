@@ -4,6 +4,7 @@ const path = require('path');
 const { URL } = require('url');
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function json(res, statusCode, payload) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -41,8 +42,7 @@ function createApp() {
             course: String(input.course).trim()
           };
 
-          const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailPattern.test(student.email)) {
+          if (!EMAIL_PATTERN.test(student.email)) {
             return json(res, 400, { error: 'invalid email format' });
           }
 
@@ -81,8 +81,7 @@ function createApp() {
             course: String(input.course).trim()
           };
 
-          const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailPattern.test(updated.email)) {
+          if (!EMAIL_PATTERN.test(updated.email)) {
             return json(res, 400, { error: 'invalid email format' });
           }
 

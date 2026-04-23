@@ -20,15 +20,35 @@ async function loadStudents() {
   studentsBody.innerHTML = '';
   for (const student of students) {
     const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${student.name}</td>
-      <td>${student.email}</td>
-      <td>${student.course}</td>
-      <td>
-        <button data-action="edit" data-id="${student.id}" class="secondary">Edit</button>
-        <button data-action="delete" data-id="${student.id}">Delete</button>
-      </td>
-    `;
+    const nameCell = document.createElement('td');
+    nameCell.textContent = student.name;
+
+    const emailCell = document.createElement('td');
+    emailCell.textContent = student.email;
+
+    const courseCell = document.createElement('td');
+    courseCell.textContent = student.course;
+
+    const actionsCell = document.createElement('td');
+    const editButton = document.createElement('button');
+    editButton.dataset.action = 'edit';
+    editButton.dataset.id = String(student.id);
+    editButton.className = 'secondary';
+    editButton.textContent = 'Edit';
+
+    const deleteButton = document.createElement('button');
+    deleteButton.dataset.action = 'delete';
+    deleteButton.dataset.id = String(student.id);
+    deleteButton.textContent = 'Delete';
+
+    actionsCell.appendChild(editButton);
+    actionsCell.appendChild(document.createTextNode(' '));
+    actionsCell.appendChild(deleteButton);
+
+    row.appendChild(nameCell);
+    row.appendChild(emailCell);
+    row.appendChild(courseCell);
+    row.appendChild(actionsCell);
     studentsBody.appendChild(row);
   }
 }
