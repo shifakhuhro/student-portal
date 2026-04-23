@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Student Portal</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Student Portal</h1>
+      <form id="student-form" class="card">
+        <input type="hidden" id="student-id" />
+        <label>
+          Name
+          <input id="name" required />
+        </label>
+        <label>
+          Email
+          <input id="email" type="email" required />
+        </label>
+        <label>
+          Course
+          <input id="course" required />
+        </label>
+        <div class="actions">
+          <button type="submit" id="submit-button">Add Student</button>
+          <button type="button" id="cancel-edit" class="secondary" hidden>Cancel Edit</button>
+        </div>
+        <p id="message" aria-live="polite"></p>
+      </form>
+
+      <section class="card">
+        <h2>Students</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Course</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="students-body"></tbody>
+        </table>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>
