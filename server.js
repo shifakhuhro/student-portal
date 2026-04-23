@@ -5,10 +5,42 @@ const { URL } = require('url');
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_BODY_SIZE = 1024 * 1024;
 
 function json(res, statusCode, payload) {
   res.writeHead(statusCode, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(payload));
+}
+
+function parseJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    let size = 0;
+    let tooLarge = false;
+
+    req.on('data', (chunk) => {
+      if (tooLarge) return;
+      size += chunk.length;
+      if (size > MAX_BODY_SIZE) {
+        tooLarge = true;
+        return;
+      }
+      body += chunk;
+    });
+
+    req.on('end', () => {
+      if (tooLarge) {
+        return reject(new Error('request body too large'));
+      }
+      try {
+        return resolve(JSON.parse(body || '{}'));
+      } catch {
+        return reject(new Error('invalid json body'));
+      }
+    });
+
+    req.on('error', reject);
+  });
 }
 
 function createApp() {
@@ -24,74 +56,66 @@ function createApp() {
     }
 
     if (pathname === '/api/students' && req.method === 'POST') {
-      let body = '';
-      req.on('data', (chunk) => {
-        body += chunk;
-      });
-      req.on('end', () => {
-        try {
-          const input = JSON.parse(body || '{}');
-          if (!input.name || !input.email || !input.course) {
-            return json(res, 400, { error: 'name, email and course are required' });
-          }
-
-          const student = {
-            id: nextId++,
-            name: String(input.name).trim(),
-            email: String(input.email).trim(),
-            course: String(input.course).trim()
-          };
-
-          if (!EMAIL_PATTERN.test(student.email)) {
-            return json(res, 400, { error: 'invalid email format' });
-          }
-
-          students.push(student);
-          return json(res, 201, student);
-        } catch {
-          return json(res, 400, { error: 'invalid json body' });
+      try {
+        const input = await parseJsonBody(req);
+        if (!input.name || !input.email || !input.course) {
+          return json(res, 400, { error: 'name, email and course are required' });
         }
-      });
-      return;
+
+        const student = {
+          id: nextId++,
+          name: String(input.name).trim(),
+          email: String(input.email).trim(),
+          course: String(input.course).trim()
+        };
+
+        if (!EMAIL_PATTERN.test(student.email)) {
+          return json(res, 400, { error: 'invalid email format' });
+        }
+
+        students.push(student);
+        return json(res, 201, student);
+      } catch (err) {
+        if (err && err.message === 'request body too large') {
+          return json(res, 413, { error: 'request body too large' });
+        }
+        return json(res, 400, { error: 'invalid json body' });
+      }
     }
 
     const studentIdMatch = pathname.match(/^\/api\/students\/(\d+)$/);
     if (studentIdMatch && req.method === 'PUT') {
-      let body = '';
-      req.on('data', (chunk) => {
-        body += chunk;
-      });
-      req.on('end', () => {
-        try {
-          const id = Number(studentIdMatch[1]);
-          const idx = students.findIndex((student) => student.id === id);
-          if (idx === -1) {
-            return json(res, 404, { error: 'student not found' });
-          }
-
-          const input = JSON.parse(body || '{}');
-          if (!input.name || !input.email || !input.course) {
-            return json(res, 400, { error: 'name, email and course are required' });
-          }
-
-          const updated = {
-            id,
-            name: String(input.name).trim(),
-            email: String(input.email).trim(),
-            course: String(input.course).trim()
-          };
-
-          if (!EMAIL_PATTERN.test(updated.email)) {
-            return json(res, 400, { error: 'invalid email format' });
-          }
-
-          students[idx] = updated;
-          return json(res, 200, updated);
-        } catch {
-          return json(res, 400, { error: 'invalid json body' });
+      try {
+        const id = Number(studentIdMatch[1]);
+        const idx = students.findIndex((student) => student.id === id);
+        if (idx === -1) {
+          return json(res, 404, { error: 'student not found' });
         }
-      });
-      return;
+
+        const input = await parseJsonBody(req);
+        if (!input.name || !input.email || !input.course) {
+          return json(res, 400, { error: 'name, email and course are required' });
+        }
+
+        const updated = {
+          id,
+          name: String(input.name).trim(),
+          email: String(input.email).trim(),
+          course: String(input.course).trim()
+        };
+
+        if (!EMAIL_PATTERN.test(updated.email)) {
+          return json(res, 400, { error: 'invalid email format' });
+        }
+
+        students[idx] = updated;
+        return json(res, 200, updated);
+      } catch (err) {
+        if (err && err.message === 'request body too large') {
+          return json(res, 413, { error: 'request body too large' });
+        }
+        return json(res, 400, { error: 'invalid json body' });
+      }
     }
 
     if (studentIdMatch && req.method === 'DELETE') {
@@ -102,7 +126,8 @@ function createApp() {
       }
 
       students.splice(idx, 1);
-      return json(res, 204, {});
+      res.writeHead(204);
+      return res.end();
     }
 
     if (req.method === 'GET') {

@@ -52,3 +52,55 @@ test('student CRUD flow', async () => {
   const afterDelete = await res.json();
   assert.equal(afterDelete.length, 0);
 });
+
+test('returns expected errors for invalid input and missing records', async () => {
+  let res = await fetch(`${baseUrl}/api/students`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{'
+  });
+  assert.equal(res.status, 400);
+
+  res = await fetch(`${baseUrl}/api/students`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'Missing fields' })
+  });
+  assert.equal(res.status, 400);
+
+  res = await fetch(`${baseUrl}/api/students`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Bad Email',
+      email: 'not-an-email',
+      course: 'Math'
+    })
+  });
+  assert.equal(res.status, 400);
+
+  res = await fetch(`${baseUrl}/api/students/999`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'No One',
+      email: 'noone@example.com',
+      course: 'History'
+    })
+  });
+  assert.equal(res.status, 404);
+
+  res = await fetch(`${baseUrl}/api/students/999`, { method: 'DELETE' });
+  assert.equal(res.status, 404);
+
+  res = await fetch(`${baseUrl}/api/students`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'x'.repeat(1024 * 1024 + 1),
+      email: 'large@example.com',
+      course: 'Load'
+    })
+  });
+  assert.equal(res.status, 413);
+});

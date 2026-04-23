@@ -20,6 +20,9 @@ async function loadStudents() {
   studentsBody.innerHTML = '';
   for (const student of students) {
     const row = document.createElement('tr');
+    row.dataset.name = student.name;
+    row.dataset.email = student.email;
+    row.dataset.course = student.course;
     const nameCell = document.createElement('td');
     nameCell.textContent = student.name;
 
@@ -109,9 +112,9 @@ studentsBody.addEventListener('click', async (event) => {
   if (action === 'edit') {
     const row = button.closest('tr');
     idInput.value = id;
-    nameInput.value = row.children[0].textContent;
-    emailInput.value = row.children[1].textContent;
-    courseInput.value = row.children[2].textContent;
+    nameInput.value = row.dataset.name || '';
+    emailInput.value = row.dataset.email || '';
+    courseInput.value = row.dataset.course || '';
     submitButton.textContent = 'Update Student';
     cancelEditButton.hidden = false;
   }
